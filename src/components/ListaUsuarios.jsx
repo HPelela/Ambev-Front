@@ -7,10 +7,11 @@ import {
   TableHead,
   TableRow,
   Paper,
-  Button,
+  IconButton,
   Box,
   Typography,
 } from "@mui/material";
+import { Edit as EditIcon, Delete as DeleteIcon } from "@mui/icons-material";
 
 const ListaUsuario = ({ usuarios, aoEditar, aoRemover, usuarioLogado }) => {
   // Mapeia o número da permissão para a string correspondente
@@ -37,7 +38,7 @@ const ListaUsuario = ({ usuarios, aoEditar, aoRemover, usuarioLogado }) => {
 
   // Filtra os usuários com base no perfil do usuário logado
   const filtrarUsuarios = (usuarios, usuarioLogado) => {
-    if (!usuarioLogado || !usuarioLogado.permissao) return [];
+    if (!usuarioLogado || !usuarioLogado.permissao) return usuarios; // Caso não haja usuário logado, mostra todos os usuários
 
     switch (usuarioLogado.permissao) {
       case 1: // Funcionário
@@ -47,7 +48,7 @@ const ListaUsuario = ({ usuarios, aoEditar, aoRemover, usuarioLogado }) => {
       case 3: // Diretor
         return usuarios; // Diretor vê todos os usuários
       default:
-        return [];
+        return usuarios;
     }
   };
 
@@ -99,23 +100,21 @@ const ListaUsuario = ({ usuarios, aoEditar, aoRemover, usuarioLogado }) => {
                 <TableCell>{usuario.nomeGerente || "N/A"}</TableCell>
                 <TableCell>{mapPermissaoToString(usuario.permissao)}</TableCell>
                 <TableCell align="center">
-                  <Button
-                    variant="contained"
+                  <IconButton
                     color="primary"
                     size="small"
                     onClick={() => aoEditar(usuario)}
                     sx={{ mr: 1 }}
                   >
-                    Editar
-                  </Button>
-                  <Button
-                    variant="outlined"
+                    <EditIcon />
+                  </IconButton>
+                  <IconButton
                     color="error"
                     size="small"
                     onClick={() => aoRemover(usuario.id)}
                   >
-                    Remover
-                  </Button>
+                    <DeleteIcon />
+                  </IconButton>
                 </TableCell>
               </TableRow>
             ))}
@@ -143,8 +142,8 @@ ListaUsuario.propTypes = {
   aoEditar: PropTypes.func.isRequired,
   aoRemover: PropTypes.func.isRequired,
   usuarioLogado: PropTypes.shape({
-    permissao: PropTypes.number.isRequired,
-  }).isRequired,
+    permissao: PropTypes.number,
+  }), // Tornamos usuarioLogado opcional
 };
 
 export default ListaUsuario;

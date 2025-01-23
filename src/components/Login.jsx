@@ -8,21 +8,6 @@ const Login = ({ aoLogar }) => {
   const [senha, setSenha] = useState("");
   const [erro, setErro] = useState("");
 
-//   const handleSubmit = async (e) => {
-//     e.preventDefault();
-//     try {
-//       const response = await axios.post("https://localhost:32769/api/usuario/login", {
-//         email,
-//         senha,
-//       });
-//       if (response.status === 200) {
-//         aoLogar(response.data); // Passa os dados do usuário autenticado para o app principal
-//       }
-//     } catch (error) {
-//       setErro(error.response?.data || "Erro ao fazer login");
-//     }
-//   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {

@@ -10,40 +10,78 @@ import {
   Box,
   Grid,
 } from "@mui/material";
-import axios from "axios";
 import PropTypes from "prop-types";
+import UsuarioService from "../services/usuarioService";
 
-const AdicionarUsuario = ({ aoSalvar, aoVoltar }) => {
+const AdicionarUsuario = ({ aoSalvar, aoVoltar, usuarioLogado }) => {
+  const usuarioService = new UsuarioService(); // Instancia o serviço
   const [primeiroNome, setPrimeiroNome] = useState("");
   const [ultimoNome, setUltimoNome] = useState("");
   const [email, setEmail] = useState("");
   const [documento, setDocumento] = useState("");
   const [telefones, setTelefones] = useState("");
   const [gerenteId, setGerenteId] = useState("");
-  const [permissao, setPermissao] = useState("Funcionario");
-  const [senha, setSenha] = useState("");  // Campo de senha
+  const [permissao, setPermissao] = useState(1);
+  const [senha, setSenha] = useState("");
   const [usuarios, setUsuarios] = useState([]);
+  const [emailErro, setEmailErro] = useState("");
 
   useEffect(() => {
-    axios
-      .get("https://localhost:32769/api/usuario")
-      .then((response) => setUsuarios(response.data))
-      .catch((error) => console.error("Erro ao carregar usuários:", error));
+    const fetchUsuarios = async () => {
+      try {
+        const usuarios = await usuarioService.carregarUsuarios();
+        setUsuarios(usuarios);
+      } catch (error) {
+        console.error("Erro ao carregar usuários:", error);
+      }
+    };
+
+    fetchUsuarios();
   }, []);
 
-  const handleSubmit = (e) => {
+  const validarEmail = (email) => {
+    const regex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+    return regex.test(email);
+  };
+
+  const limparCampos = () => {
+    setPrimeiroNome("");
+    setUltimoNome("");
+    setEmail("");
+    setDocumento("");
+    setTelefones("");
+    setGerenteId("");
+    setPermissao("Funcionario");
+    setSenha("");
+    setEmailErro("");
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!validarEmail(email)) {
+      setEmailErro("E-mail inválido! Por favor, insira um e-mail válido.");
+      return;
+    }
+
     const novoUsuario = {
       primeiroNome,
       ultimoNome,
       email,
       documento,
       telefones: telefones.split(",").map((t) => t.trim()),
-      gerenteId: gerenteId || null,
+      gerenteId: gerenteId || 0,
       permissao,
-      senha, 
+      senha,
     };
-    aoSalvar(novoUsuario);
+
+    try {
+      await usuarioService.salvarUsuario(novoUsuario, usuarioLogado.id); // null para `usuarioAtualId` no contexto de criação
+      aoSalvar(novoUsuario);
+      limparCampos(); // Limpa os campos após salvar
+    } catch (error) {
+      console.error("Erro ao adicionar usuário:", error);
+    }
   };
 
   return (
@@ -85,9 +123,14 @@ const AdicionarUsuario = ({ aoSalvar, aoVoltar }) => {
               label="E-mail"
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setEmailErro("");
+              }}
               fullWidth
               required
+              error={!!emailErro}
+              helperText={emailErro}
             />
           </Grid>
           <Grid item xs={12}>
@@ -110,7 +153,7 @@ const AdicionarUsuario = ({ aoSalvar, aoVoltar }) => {
           </Grid>
           <Grid item xs={12}>
             <TextField
-              label="Senha"  // Campo de senha
+              label="Senha"
               type="password"
               value={senha}
               onChange={(e) => setSenha(e.target.value)}
@@ -119,18 +162,18 @@ const AdicionarUsuario = ({ aoSalvar, aoVoltar }) => {
             />
           </Grid>
           <Grid item xs={12} sm={6}>
-            <FormControl fullWidth>
-              <InputLabel id="permissao-label">Permissão</InputLabel>
-              <Select
-                labelId="permissao-label"
-                value={permissao}
-                onChange={(e) => setPermissao(e.target.value)}
-              >
-                <MenuItem value="Funcionario">Funcionário</MenuItem>
-                <MenuItem value="Lider">Líder</MenuItem>
-                <MenuItem value="Diretor">Diretor</MenuItem>
-              </Select>
-            </FormControl>
+          <FormControl fullWidth>
+            <InputLabel id="permissao-label">Permissão</InputLabel>
+            <Select
+              labelId="permissao-label"
+              value={permissao}
+              onChange={(e) => setPermissao(Number(e.target.value))} // Garante que será um número
+            >
+              <MenuItem value={1}>Funcionário</MenuItem> {/* Valor numérico */}
+              <MenuItem value={2}>Líder</MenuItem>
+              <MenuItem value={3}>Diretor</MenuItem>
+            </Select>
+          </FormControl>
           </Grid>
           <Grid item xs={12} sm={6}>
             <FormControl fullWidth>
@@ -171,6 +214,9 @@ const AdicionarUsuario = ({ aoSalvar, aoVoltar }) => {
 AdicionarUsuario.propTypes = {
   aoSalvar: PropTypes.func.isRequired,
   aoVoltar: PropTypes.func.isRequired,
+  usuarioLogado: PropTypes.shape({
+      id: PropTypes.number,
+  }), // Tornamos usuarioLogado opcional
 };
 
 export default AdicionarUsuario;

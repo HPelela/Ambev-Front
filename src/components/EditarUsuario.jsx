@@ -10,10 +10,12 @@ import {
   Box,
   Grid,
 } from "@mui/material";
-import axios from "axios";
+
 import PropTypes from "prop-types";
+import UsuarioService from "../services/usuarioService";
 
 const EditarUsuario = ({ usuarioAtual, aoSalvar, aoVoltar }) => {
+  const usuarioService = new UsuarioService();
   const [primeiroNome, setPrimeiroNome] = useState(usuarioAtual.primeiroNome || "");
   const [ultimoNome, setUltimoNome] = useState(usuarioAtual.ultimoNome || "");
   const [email, setEmail] = useState(usuarioAtual.email || "");
@@ -23,16 +25,37 @@ const EditarUsuario = ({ usuarioAtual, aoSalvar, aoVoltar }) => {
   const [permissao, setPermissao] = useState(usuarioAtual.permissao || 1); // Alterado para número (1 a 3)
   const [senha, setSenha] = useState(usuarioAtual.senha || "");  // Campo de senha
   const [usuarios, setUsuarios] = useState([]);
+  const [emailErro, setEmailErro] = useState(""); // Estado para erro de email
+
 
   useEffect(() => {
-    axios
-      .get("https://localhost:32769/api/usuario")
-      .then((response) => setUsuarios(response.data))
-      .catch((error) => console.error("Erro ao carregar usuários:", error));
+    const fetchUsuarios = async () => {
+      try {
+        const usuarios = await usuarioService.carregarUsuarios();
+        setUsuarios(usuarios);
+      } catch (error) {
+        console.error("Erro ao carregar usuários:", error);
+      }
+    };
+
+    fetchUsuarios();
   }, []);
+
+
+  const validarEmail = (email) => {
+    // Expressão regular para validar o formato do email
+    const regex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+    return regex.test(email);
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    if (!validarEmail(email)) {
+      setEmailErro("E-mail inválido! Por favor, insira um e-mail válido.");
+      return;
+    }
+
     const usuarioEditado = {
       id: usuarioAtual.id,
       primeiroNome,
@@ -86,9 +109,14 @@ const EditarUsuario = ({ usuarioAtual, aoSalvar, aoVoltar }) => {
               label="E-mail"
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setEmailErro(""); // Limpa o erro quando o usuário começa a digitar
+              }}
               fullWidth
               required
+              error={!!emailErro} // Mostra erro caso exista
+              helperText={emailErro} // Exibe a mensagem de erro
             />
           </Grid>
           <Grid item xs={12}>
@@ -177,7 +205,7 @@ EditarUsuario.propTypes = {
     documento: PropTypes.string,
     telefones: PropTypes.arrayOf(PropTypes.string),
     gerenteId: PropTypes.number,
-    senha:PropTypes.number,
+    senha: PropTypes.string,
     permissao: PropTypes.number,  // Alterado para número
   }).isRequired,
   aoSalvar: PropTypes.func.isRequired,
